@@ -24,10 +24,11 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.demo.R;
 import com.example.demo.apiCall.APIInterface;
 import com.example.demo.apiCall.ApiClient;
 import com.example.demo.modal.PlacesDetails_Modal;
-import com.example.demo.easyroads.R;
+
 import com.example.demo.response.PlacesResponse;
 import com.example.demo.response.PlacesResponse.CustomA;
 import com.example.demo.response.PlacesResponse.Root;

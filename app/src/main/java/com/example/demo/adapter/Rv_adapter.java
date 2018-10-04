@@ -9,14 +9,14 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.example.demo.modal.PlacesDetails_Modal;
-import com.example.demo.easyroads.R;
+import com.example.demo.R;
 import com.example.demo.adapter.Rv_adapter.MyViewHolder;
 
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
 
-import static com.example.demo.easyroads.R.id.distance;
+import static com.example.demo.R.id.distance;
 
 /**
  * Created by samarthkejriwal on 10/08/17.

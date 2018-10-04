@@ -14,7 +14,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
-import com.example.demo.easyroads.R;
+import com.example.demo.R;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
@@ -46,7 +46,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
-        btnNearByIdeas=(Button)findViewById(R.id.btnNearByIdeas);
+        btnNearByIdeas = (Button) findViewById(R.id.btnNearByIdeas);
         if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             checkLocationPermission();
         }
@@ -57,8 +57,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         btnNearByIdeas.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(currentLocation!=null && currentLocation.latitude != 0){
-                    startActivity(new Intent(MapsActivity.this,TabLayoutActivity.class).putExtra("location",currentLocation.latitude+","+currentLocation.longitude));
+                if (currentLocation != null && currentLocation.latitude != 0) {
+                    startActivity(new Intent(MapsActivity.this, TabLayoutActivity.class).putExtra("location", currentLocation.latitude + "," + currentLocation.longitude));
                 }
             }
         });
@@ -87,8 +87,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 buildGoogleApiClient();
                 mMap.setMyLocationEnabled(true);
             }
-        }
-        else {
+        } else {
             buildGoogleApiClient();
             mMap.setMyLocationEnabled(true);
         }
@@ -133,7 +132,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         //Place current location marker
         LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-        currentLocation=latLng;
+        currentLocation = latLng;
         MarkerOptions markerOptions = new MarkerOptions();
         markerOptions.position(latLng);
         markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN));
@@ -145,7 +144,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.animateCamera(CameraUpdateFactory.zoomTo(19));
         mMap.setBuildingsEnabled(true);
         mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
-
+        mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
+            @Override
+            public boolean onMarkerClick(Marker marker) {
+                if (marker.isInfoWindowShown()) {
+                    marker.hideInfoWindow();
+                } else {
+                    marker.showInfoWindow();
+                }
+                return true;
+            }
+        });
         mMap.setOnMarkerDragListener(new GoogleMap.OnMarkerDragListener() {
             @Override
             public void onMarkerDragStart(Marker marker) {
@@ -159,13 +168,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             @Override
             public void onMarkerDragEnd(Marker marker) {
-                currentLocation=marker.getPosition();
+                currentLocation = marker.getPosition();
                 mCurrLocationMarker.setPosition(marker.getPosition());
                 mCurrLocationMarker.setSnippet(marker.getSnippet());
                 mCurrLocationMarker.setTitle(marker.getTitle());
+                mCurrLocationMarker.showInfoWindow();
                 mMap.animateCamera(CameraUpdateFactory.newLatLng(marker.getPosition()));
             }
         });
+        mCurrLocationMarker.showInfoWindow();
         mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
             @Override
             public boolean onMarkerClick(Marker marker) {
@@ -176,6 +187,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN));
                 markerOptions.draggable(true);
                 mCurrLocationMarker = mMap.addMarker(markerOptions);
+                mCurrLocationMarker.showInfoWindow();
 
                 return false;
             }
@@ -194,7 +206,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     public static final int MY_PERMISSIONS_REQUEST_LOCATION = 99;
-    public boolean checkLocationPermission(){
+
+    public boolean checkLocationPermission() {
         if (ContextCompat.checkSelfPermission(this,
                 Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
