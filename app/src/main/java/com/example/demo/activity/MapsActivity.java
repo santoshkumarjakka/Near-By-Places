@@ -1,19 +1,27 @@
 package com.example.demo.activity;
 
 import android.Manifest;
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Point;
 import android.location.Location;
 import android.os.Build;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.example.demo.CustomMapFragment;
+import com.example.demo.MapWrapperLayout;
 import com.example.demo.R;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -23,6 +31,7 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.Projection;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
@@ -32,7 +41,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback,
         GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener,
-        LocationListener {
+        LocationListener, MapWrapperLayout.OnDragListener {
 
     private GoogleMap mMap;
     GoogleApiClient mGoogleApiClient;
@@ -41,19 +50,72 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     LocationRequest mLocationRequest;
     private LatLng currentLocation;
     private Button btnNearByIdeas;
+    //    private MapFragmentWrapper mapView;
+    private ImageView mMarkerImageView;
+
+    private int imageParentWidth = -1;
+    private int imageParentHeight = -1;
+    private int imageHeight = -1;
+    private int centerX = -1;
+    private int centerY = -1;
+    private CustomMapFragment mCustomMapFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
+        mMarkerImageView = (ImageView) findViewById(R.id.marker_icon_view);
+
         btnNearByIdeas = (Button) findViewById(R.id.btnNearByIdeas);
+
+        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
+//        CustomMapFragment mapFragment = (CustomMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
+//        mapFragment.getMapAsync(this);
+
+        mCustomMapFragment = ((CustomMapFragment) getFragmentManager()
+                .findFragmentById(R.id.map));
+        mCustomMapFragment.setOnDragListener(MapsActivity.this);
+        mCustomMapFragment.getMapAsync(this);
+
         if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             checkLocationPermission();
+        } else {
+            if (mGoogleApiClient == null) {
+                buildGoogleApiClient();
+            }
+            mMap.setMyLocationEnabled(true);
         }
-        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.map);
-        mapFragment.getMapAsync(this);
+
+
+//        mapView.setOnDragListener(new MapFragmentWrapper.OnDragListener() {
+//            @Override
+//            public void onDragStart(ImageView imageView) {
+//
+//            }
+//
+//            @Override
+//            public void onDragEnd(ImageView imageView) {
+//                DisplayMetrics displaymetrics = new DisplayMetrics();
+//                getWindowManager().getDefaultDisplay().getMetrics(displaymetrics);
+//
+//                imageParentWidth = imageView.getWidth();
+//                imageParentHeight = imageView.getHeight();
+//                int imageHeight = imageView.getHeight();
+//
+//                int centerX = imageParentWidth / 2;
+//                int centerY = (imageParentHeight / 2) + (imageHeight / 2);
+//                Projection projection = (mMap != null && mMap.getProjection() != null) ? mMap.getProjection()
+//                        : null;
+//
+//                if (projection != null) {
+//                    LatLng centerLatLng = projection.fromScreenLocation(new Point(
+//                            centerX, centerY));
+//                    Log.i("values", String.valueOf(centerLatLng.latitude));
+////                    Toast.makeText(MapsActivity.this, (int) centerLatLng.latitude,Toast.LENGTH_LONG).show();
+//                }
+//
+//            }
+//        });
         btnNearByIdeas.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -77,7 +139,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
-        mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
+        mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
 
         //Initialize Google Play Services
         if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -133,66 +195,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         //Place current location marker
         LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
         currentLocation = latLng;
-        MarkerOptions markerOptions = new MarkerOptions();
-        markerOptions.position(latLng);
-        markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN));
-        markerOptions.draggable(true);
-        mCurrLocationMarker = mMap.addMarker(markerOptions);
 
         //move map camera
         mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
         mMap.animateCamera(CameraUpdateFactory.zoomTo(19));
+
         mMap.setBuildingsEnabled(true);
         mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
-        mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
-            @Override
-            public boolean onMarkerClick(Marker marker) {
-                if (marker.isInfoWindowShown()) {
-                    marker.hideInfoWindow();
-                } else {
-                    marker.showInfoWindow();
-                }
-                return true;
-            }
-        });
-        mMap.setOnMarkerDragListener(new GoogleMap.OnMarkerDragListener() {
-            @Override
-            public void onMarkerDragStart(Marker marker) {
 
-            }
-
-            @Override
-            public void onMarkerDrag(Marker marker) {
-
-            }
-
-            @Override
-            public void onMarkerDragEnd(Marker marker) {
-                currentLocation = marker.getPosition();
-                mCurrLocationMarker.setPosition(marker.getPosition());
-                mCurrLocationMarker.setSnippet(marker.getSnippet());
-                mCurrLocationMarker.setTitle(marker.getTitle());
-                mCurrLocationMarker.showInfoWindow();
-                mMap.animateCamera(CameraUpdateFactory.newLatLng(marker.getPosition()));
-            }
-        });
-        mCurrLocationMarker.showInfoWindow();
-        mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
-            @Override
-            public boolean onMarkerClick(Marker marker) {
-
-                MarkerOptions markerOptions = new MarkerOptions();
-                markerOptions.position(marker.getPosition());
-                markerOptions.title(marker.getTitle());
-                markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN));
-                markerOptions.draggable(true);
-                mCurrLocationMarker = mMap.addMarker(markerOptions);
-                mCurrLocationMarker.showInfoWindow();
-
-                return false;
-            }
-        });
-        Log.i("postion1", String.valueOf(mCurrLocationMarker.getPosition().latitude));
         //stop location updates
         if (mGoogleApiClient != null) {
             LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
@@ -269,6 +279,63 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             // other 'case' lines to check for other permissions this app might request.
             // You can add here other case statements according to your requirement.
+        }
+    }
+
+
+    @Override
+    public void onDrag(MotionEvent motionEvent) {
+        if (motionEvent.getAction() == MotionEvent.ACTION_UP) {
+            animateUp();
+        }
+        if (motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
+            animateDown();
+            Projection projection = mMap != null ? mMap.getProjection()
+                    : null;
+            //
+            if (projection != null) {
+                LatLng centerLatLng = projection.fromScreenLocation(new Point(
+                        centerX, centerY));
+                currentLocation = centerLatLng;
+
+            }
+        }
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        DisplayMetrics displaymetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displaymetrics);
+
+        imageParentWidth = mMarkerImageView.getWidth();
+        imageParentHeight = mMarkerImageView.getHeight();
+        imageHeight = mMarkerImageView.getHeight();
+
+        centerX = imageParentWidth / 2;
+        centerY = (imageParentHeight / 2) + (imageHeight / 2);
+    }
+
+    void animateUp() {
+        if (mMarkerImageView != null) {
+            ObjectAnimator translateY = ObjectAnimator.ofFloat(mMarkerImageView, "translationY", (float) mMarkerImageView.getHeight() / 10);
+
+
+            AnimatorSet animatorSet = new AnimatorSet();
+            animatorSet.playTogether(translateY);
+            animatorSet.start();
+        }
+    }
+
+    void animateDown() {
+        if (mMarkerImageView != null) {
+            ObjectAnimator translateYInverse = ObjectAnimator.ofFloat(mMarkerImageView,
+                    "translationY",
+                    mMarkerImageView.getHeight() / 25);
+
+
+            AnimatorSet animatorSet = new AnimatorSet();
+            animatorSet.playTogether(translateYInverse);
+            animatorSet.start();
         }
     }
 }
